@@ -3,37 +3,41 @@
 #include <iostream>
 #include <limits>
 
-using std::cout;
-using std::cin;
-using std::endl;
+using namespace std;
 
 const int max_stream_size = 100;
 
 struct Pipe {
-    std::string name = "None";
+    string name = "None";
     double length = 0.;
     int diameter = 0;
     bool in_repair = false;
 };
 
 struct Station {
-    std::string name = "None";
+    string name = "None";
     int workshops = 0, workshops_in_operation = 0;
-    char station_class = 0;
+    char station_class = ' ';
 };
 
 template <typename T>
-void safe_input( std::string message, T& attribute, T min = 0, T max = std::numeric_limits<T>::max()){  //https://en.cppreference.com/w/cpp/types/numeric_limits.html
+T safe_input(T min, T max, string message = "None"){
+    T attribute;
     while (1){
-        if ((cin >> attribute) && attribute >= min && attribute <= max)//!!!!!!!!!!!!!!!!!!!
-            return;
-        cout << "Ошибка! " << message;
+        if ((cin >> attribute) && attribute >= min && attribute <= max)
+            return attribute;
+        cout << "Введите ";
+        if (message == "None")
+            cout << "число от " << min << " до " << max;
+        else
+            cout << message;
+        cout << ": ";
         cin.clear();
         cin.ignore(max_stream_size, '\n');
     }
 }
 
-void save_pipe(const Pipe& pipe, std::ofstream& ofs){
+void save_pipe(const Pipe& pipe, ofstream& ofs){
     ofs << "Pipe\n";
     ofs << pipe.name << endl;
     ofs << pipe.length << endl;
@@ -43,7 +47,7 @@ void save_pipe(const Pipe& pipe, std::ofstream& ofs){
     cout << "Труба была успешно сохранена" << endl;//!!!
 }
 
-void save_station(const Station& station, std::ofstream& ofs){
+void save_station(const Station& station, ofstream& ofs){
     ofs << "Station\n";
     ofs << station.name << endl;
     ofs << station.workshops << endl;
@@ -53,8 +57,8 @@ void save_station(const Station& station, std::ofstream& ofs){
     cout << "Станция была успешно сохранена" << endl;//!!!
 }
 
-void save_to_file(const Pipe& pipe, const Station& station, const std::string& filename){
-    std::ofstream ofs(filename);
+void save_to_file(const Pipe& pipe, const Station& station, const string& filename){
+    ofstream ofs(filename);
     if (pipe.diameter || station.workshops){
         if (pipe.diameter)
             save_pipe(pipe, ofs);
@@ -64,29 +68,25 @@ void save_to_file(const Pipe& pipe, const Station& station, const std::string& f
         cout << "Нет объектов для сохранения в файл" << endl;
 }
 
-void load_pipe(Pipe& pipe, std::ifstream& ifs){
-    ifs >> std::ws;
-    std::getline(ifs, pipe.name);
+void load_pipe(Pipe& pipe, ifstream& ifs){
+    getline(ifs >> ws, pipe.name);
     ifs >> pipe.length >> pipe.diameter >> pipe.in_repair;
-    ifs >> std::ws;
     cout << "Труба загружена успешно" << endl;
 }
 
-void load_station(Station& station, std::ifstream& ifs){
-    ifs >> std::ws;
-    std::getline(ifs, station.name);
+void load_station(Station& station, ifstream& ifs){
+    getline(ifs >> ws, station.name);
     ifs >> station.workshops >> station.workshops_in_operation >> station.station_class;
-    ifs >> std::ws;
     cout << "КС загружена успешно" << endl;
 }
 
-void load_file(Pipe& pipe, Station& station, const std::string& filename){
-    std::ifstream ifs(filename);
+void load_file(Pipe& pipe, Station& station, const string& filename){
+    ifstream ifs(filename);
     if (!(ifs)){
         cout << "Не удалось открыть файл на чтение" << endl;
         return;
     }
-    std::string line;
+    string line;
     while (ifs >> line){
         if (line == "Pipe"){
             load_pipe(pipe, ifs);
@@ -110,35 +110,33 @@ void print_menu(){
 }
 
 
-std::istream& operator >> (std::istream& in, Pipe& pipe){
+istream& operator >> (istream& in, Pipe& pipe){
     cout << "Введите название - ";
-    in >> std::ws;
-    std::getline(in, pipe.name);
-    cout << "Введите длину - ";
-    safe_input("Введите положительное число: ", pipe.length, 0.00001);
-    cout << "Введите диаметр - ";
-    safe_input("Введите число не меньше 1: ", pipe.diameter, 1);
+    in >> ws;
+    getline(in, pipe.name);
+    cout << "Введите длину (км) - ";
+    pipe.length = safe_input(0.001, 4000.);
+    cout << "Введите диаметр (мм) - ";
+    pipe.diameter = safe_input(0, 1420);
     cout << "В ремонте (0 - нет, 1 - да) - ";
-    safe_input("Введите 0 (нет) или 1 (да): ", pipe.in_repair, false, true);
+    pipe.in_repair = safe_input(0, 1, "0 (нет) или 1 (да)");
     return in;
 }
 
-std::istream& operator >> (std::istream& in, Station& station){
+istream& operator >> (istream& in, Station& station){
     cout << "Введите название - ";
-    in >> std::ws;
-    std::getline(in, station.name);
+    in >> ws;
+    getline(in, station.name);
     cout << "Введите количество цехов - ";
-    safe_input("Введите положительное число: ", station.workshops);
+    station.workshops = safe_input(1, 20);
     cout << "Введите количество цехов в работе - ";
-    safe_input("Количество цехов в работе не может быть меньше нуля или больше общего количества цехов. Попробуйте еще раз: ", 
-        station.workshops_in_operation, 0, station.workshops);
+    station.workshops_in_operation = safe_input(0, station.workshops);
     cout << "Введите класс станции (латинские a, b или c) - ";
-    safe_input("Класс станции может быть либо а либо b либо с. Попробуйте еще раз: ", 
-        station.station_class, 'a', 'c');
+    station.station_class = safe_input('a', 'b', "a, b или c");
     return in;
 }
 
-std::ostream& operator << (std::ostream& out, const Pipe& pipe){
+ostream& operator << (ostream& out, const Pipe& pipe){
     out << "Название - " << pipe.name << ";\n" 
         << "Длина - " << pipe.length << ";\n"
         << "Диаметр - " << pipe.diameter << ";\n"
@@ -146,7 +144,7 @@ std::ostream& operator << (std::ostream& out, const Pipe& pipe){
     return out;
 }
 
-std::ostream& operator << (std::ostream& out, const Station& station){
+ostream& operator << (ostream& out, const Station& station){
     out << "Название - " << station.name << ";\n"
         << "Количество цехов - " << station.workshops << ";\n"
         << "Количество цехов в работе - " << station.workshops_in_operation << ";\n"
@@ -158,11 +156,9 @@ std::ostream& operator << (std::ostream& out, const Station& station){
 int main(){
     Pipe pipe;
     Station station;
-    int command;
     while (1){
         print_menu();
-        safe_input("Такого пунтка меню нет. Введите число от 0 до 7 включительно: ", command, 0, 7);
-        switch (command){
+        switch (safe_input(0, 7)){
             case 1: {
                 cout << "1) Добавление новой трубы:" << endl; cin >> pipe;
                 break;
@@ -186,7 +182,7 @@ int main(){
                 cout << "4) Редактирование трубы:" << endl;
                 if (pipe.diameter){
                     cout << "Труба все еще в ремонте? (0 - нет, 1 - да) - ";
-                    safe_input("Введите 0 (нет) или 1 (да): ", pipe.in_repair, false, true);
+                    pipe.in_repair = safe_input(0, 1, "0 (нет) или 1 (да): ");
                 } else
                     cout << "Добавьте трубу перед тем, как ее редактировать" << endl;
                 break;
@@ -195,8 +191,7 @@ int main(){
                 cout << "5) Редактирование КС:" << endl;
                 if (station.workshops){
                     cout << "Количество цехов в работе на данный момент - ";
-                    safe_input("Количество цехов в работе не может быть меньше нуля или больше общего количества цехов. Попробуйте еще раз: ", 
-        station.workshops_in_operation, -1, station.workshops);
+                    station.workshops_in_operation = safe_input(0, station.workshops);
                 } else
                     cout << "Добавтье КС перед так, как ее редактирвоать" << endl;
                 break;
