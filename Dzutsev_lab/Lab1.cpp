@@ -44,7 +44,7 @@ void save_pipe(const Pipe& pipe, ofstream& ofs){
     ofs << pipe.diameter << endl;
     ofs << pipe.in_repair << endl;
 
-    cout << "Труба была успешно сохранена" << endl;//!!!
+    cout << "Труба была успешно сохранена" << endl;
 }
 
 void save_station(const Station& station, ofstream& ofs){
@@ -54,7 +54,7 @@ void save_station(const Station& station, ofstream& ofs){
     ofs << station.workshops_in_operation << endl;
     ofs << station.station_class << endl;
 
-    cout << "Станция была успешно сохранена" << endl;//!!!
+    cout << "Станция была успешно сохранена" << endl;
 }
 
 void save_to_file(const Pipe& pipe, const Station& station, const string& filename){
@@ -87,6 +87,8 @@ void load_file(Pipe& pipe, Station& station, const string& filename){
         return;
     }
     string line;
+    pipe={};
+    station={};
     while (ifs >> line){
         if (line == "Pipe"){
             load_pipe(pipe, ifs);
