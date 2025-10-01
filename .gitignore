@@ -4,3 +4,5 @@ test
 test.cpp
 Lab1
 *.exe
+*.out
+*.log

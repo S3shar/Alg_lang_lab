@@ -91,7 +91,7 @@ void print_menu(){
 int main(){
     redirect_output_wrapper cerr_log(cerr);
     string time = format("{:%d_%m_%Y %H_%M_%OS}", system_clock::now());
-	ofstream logfile("log_"+ time);
+	ofstream logfile("log_"+ time + ".log");
 	if (logfile)
 		cerr_log.redirect(logfile);
     Pipe pipe;
