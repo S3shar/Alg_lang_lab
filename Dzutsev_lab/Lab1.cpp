@@ -1,84 +1,60 @@
 #include <iostream>
 #include <fstream>
-#include <iostream>
 #include <limits>
+#include "Pipe.h"
+#include "Station.h"
+#include "utils.h"
+#include <format>
+#include <chrono>
 
 using namespace std;
+using namespace chrono;
 
 const int max_stream_size = 100;
 
-struct Pipe {
-    string name = "None";
-    double length = 0.;
-    int diameter = 0;
-    bool in_repair = false;
-};
 
-struct Station {
-    string name = "None";
-    int workshops = 0, workshops_in_operation = 0;
-    char station_class = ' ';
-};
+// void save_pipe(const Pipe& pipe, ofstream& ofs){
+//     ofs << "Pipe\n";
+//     ofs << pipe.name << endl;
+//     ofs << pipe.length << endl;
+//     ofs << pipe.diameter << endl;
+//     ofs << pipe.in_repair << endl;
 
-template <typename T>
-T safe_input(T min, T max, string message = "None"){
-    T attribute;
-    while (1){
-        if ((cin >> attribute) && attribute >= min && attribute <= max)
-            return attribute;
-        cout << "Введите ";
-        if (message == "None")
-            cout << "число от " << min << " до " << max;
-        else
-            cout << message;
-        cout << ": ";
-        cin.clear();
-        cin.ignore(max_stream_size, '\n');
-    }
-}
+//     cout << "Труба была успешно сохранена" << endl;
+// }
 
-void save_pipe(const Pipe& pipe, ofstream& ofs){
-    ofs << "Pipe\n";
-    ofs << pipe.name << endl;
-    ofs << pipe.length << endl;
-    ofs << pipe.diameter << endl;
-    ofs << pipe.in_repair << endl;
+// void save_station(const Station& station, ofstream& ofs){
+//     ofs << "S\n";
+//     ofs << station.name << endl;
+//     ofs << station.workshops << endl;
+//     ofs << station.workshops_in_operation << endl;
+//     ofs << station.station_class << endl;
 
-    cout << "Труба была успешно сохранена" << endl;
-}
-
-void save_station(const Station& station, ofstream& ofs){
-    ofs << "Station\n";
-    ofs << station.name << endl;
-    ofs << station.workshops << endl;
-    ofs << station.workshops_in_operation << endl;
-    ofs << station.station_class << endl;
-
-    cout << "Станция была успешно сохранена" << endl;
-}
+//     cout << "Станция была успешно сохранена" << endl;
+// }
 
 void save_to_file(const Pipe& pipe, const Station& station, const string& filename){
     ofstream ofs(filename);
-    if (pipe.diameter || station.workshops){
-        if (pipe.diameter)
-            save_pipe(pipe, ofs);
-        if (station.workshops)
-            save_station(station, ofs);
+    if (pipe.getDiameter() || station.getWorkshops()){
+        if (pipe.getDiameter())
+            pipe.SavePipe(ofs);
+        if (station.getWorkshops())
+            station.SaveStation(ofs);
     } else
         cout << "Нет объектов для сохранения в файл" << endl;
 }
 
-void load_pipe(Pipe& pipe, ifstream& ifs){
-    getline(ifs >> ws, pipe.name);
-    ifs >> pipe.length >> pipe.diameter >> pipe.in_repair;
-    cout << "Труба загружена успешно" << endl;
-}
+// void load_pipe(Pipe& pipe, ifstream& ifs){
+//     getline(ifs >> ws, pipe.getName());
+//     ifs >> pipe.length >> pipe.diameter >> pipe.in_repair;
+//     cout << "Труба загружена успешно" << endl;
+// }
 
-void load_station(Station& station, ifstream& ifs){
-    getline(ifs >> ws, station.name);
-    ifs >> station.workshops >> station.workshops_in_operation >> station.station_class;
-    cout << "КС загружена успешно" << endl;
-}
+// void load_station(Station& station, ifstream& ifs){
+//     getline(ifs >> ws, station.getName());
+//     ifs >> station.workshops >> station.workshops_in_operation >> station.station_class;
+//     cout << "КС загружена успешно" << endl;
+// }
 
 void load_file(Pipe& pipe, Station& station, const string& filename){
     ifstream ifs(filename);
@@ -91,10 +67,10 @@ void load_file(Pipe& pipe, Station& station, const string& filename){
     station={};
     while (ifs >> line){
         if (line == "Pipe"){
-            load_pipe(pipe, ifs);
+            pipe.LoadPipe(ifs);
         }
-        if (line == "Station"){
-            load_station(station, ifs);
+        if (line == "S"){
+            station.LoadStation(ifs);
         }
     }
 }
@@ -112,50 +88,12 @@ void print_menu(){
 }
 
 
-istream& operator >> (istream& in, Pipe& pipe){
-    cout << "Введите название - ";
-    in >> ws;
-    getline(in, pipe.name);
-    cout << "Введите длину (км) - ";
-    pipe.length = safe_input(0.001, 4000.);
-    cout << "Введите диаметр (мм) - ";
-    pipe.diameter = safe_input(0, 1420);
-    cout << "В ремонте (0 - нет, 1 - да) - ";
-    pipe.in_repair = safe_input(0, 1, "0 (нет) или 1 (да)");
-    return in;
-}
-
-istream& operator >> (istream& in, Station& station){
-    cout << "Введите название - ";
-    in >> ws;
-    getline(in, station.name);
-    cout << "Введите количество цехов - ";
-    station.workshops = safe_input(1, 20);
-    cout << "Введите количество цехов в работе - ";
-    station.workshops_in_operation = safe_input(0, station.workshops);
-    cout << "Введите класс станции (латинские a, b или c) - ";
-    station.station_class = safe_input('a', 'b', "a, b или c");
-    return in;
-}
-
-ostream& operator << (ostream& out, const Pipe& pipe){
-    out << "Название - " << pipe.name << ";\n" 
-        << "Длина - " << pipe.length << ";\n"
-        << "Диаметр - " << pipe.diameter << ";\n"
-        << ((pipe.in_repair) ? "В" : "Не в") << " ремонте" << ";\n\n";
-    return out;
-}
-
-ostream& operator << (ostream& out, const Station& station){
-    out << "Название - " << station.name << ";\n"
-        << "Количество цехов - " << station.workshops << ";\n"
-        << "Количество цехов в работе - " << station.workshops_in_operation << ";\n"
-        << "Класс станции - " << station.station_class << ";\n\n";
-    return out;
-}
-
-
 int main(){
+    redirect_output_wrapper cerr_log(cerr);
+    string time = format("{:%d_%m_%Y %H_%M_%OS}", system_clock::now());
+	ofstream logfile("log_"+ time);
+	if (logfile)
+		cerr_log.redirect(logfile);
     Pipe pipe;
     Station station;
     while (1){
@@ -170,11 +108,11 @@ int main(){
                 break;
             }
             case 3: {
-                if (pipe.diameter || station.workshops){
+                if (pipe.getDiameter() || station.getWorkshops()){
                     cout << "3) ";
-                    if (pipe.diameter)
+                    if (pipe.getDiameter())
                         cout << "Параметры трубы:" << endl << pipe;
-                    if (station.workshops != 0)
+                    if (station.getWorkshops() != 0)
                         cout  << "Параметры станции:" << endl << station;
                 } else
                     cout << "Ни одного объекта еще не было добавлено" << endl;
@@ -182,18 +120,18 @@ int main(){
             }
             case 4: {
                 cout << "4) Редактирование трубы:" << endl;
-                if (pipe.diameter){
+                if (pipe.getDiameter()){
                     cout << "Труба все еще в ремонте? (0 - нет, 1 - да) - ";
-                    pipe.in_repair = safe_input(0, 1, "0 (нет) или 1 (да): ");
+                    pipe.setInRepair(safe_input(0, 1, "0 (нет) или 1 (да): "));
                 } else
                     cout << "Добавьте трубу перед тем, как ее редактировать" << endl;
                 break;
             }
             case 5: {
                 cout << "5) Редактирование КС:" << endl;
-                if (station.workshops){
+                if (station.getWorkshops()){
                     cout << "Количество цехов в работе на данный момент - ";
-                    station.workshops_in_operation = safe_input(0, station.workshops);
+                    station.setStationClass(safe_input(0, station.getWorkshops()));
                 } else
                     cout << "Добавтье КС перед так, как ее редактирвоать" << endl;
                 break;
