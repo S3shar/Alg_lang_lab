@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <unordered_map>
 
 #define INPUT_LINE(in, str) getline(in>>std::ws, str); \
 						std::cerr << str << std::endl
@@ -25,6 +26,21 @@ public:
 	}
 };
 
+template <typename T, typename T2>
+using Filter = bool(*)(const T2& obj, T param);
+
+template <typename T, typename T2>
+void find_by_filter(const std::unordered_map<int, T2>& objs, Filter<T, T2> f, T param){
+	if (objs.empty()){
+		std::cout << "Добавьте хотя бы один объект" << std::endl;
+        return;
+	}
+    std::cout << "4) Просмотр объектов по фильтру:" << std::endl;
+	for (const auto & obj : objs){
+		if (f(obj.second, param))
+			std::cout << obj.second;
+	}
+}
 
 template <typename T>
 T safe_input(T min, T max, std::string message = "None"){

@@ -4,12 +4,12 @@
 
 
 class Station {
+    static int MaxID;
     int id;
     std::string name = "None";
     int workshops = 0, workshops_in_operation = 0;
     char station_class = 'a';
 public:
-    static int MaxID;
     
     int getId() const { return id; }
     std::string getName() const { return name; }
@@ -20,6 +20,9 @@ public:
 
     void LoadStation(std::istream& in);
     void SaveStation(std::ostream& out) const;
+
+    static bool check_station_by_name(const Station& station, std::string name);
+    static bool check_station_by_workshop_percentage(const Station& station, double percentage);
 
     friend std::istream& operator>>(std::istream& in, Station& station);
     friend std::ostream& operator<<(std::ostream& out, const Station& station);

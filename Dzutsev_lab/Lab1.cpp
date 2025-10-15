@@ -6,84 +6,60 @@
 #include "utils.h"
 #include <format>
 #include <chrono>
+#include <unordered_map>
+
 
 using namespace std;
 using namespace chrono;
-
-const int max_stream_size = 100;
-
-
-// void save_pipe(const Pipe& pipe, ofstream& ofs){
-//     ofs << "Pipe\n";
-//     ofs << pipe.name << endl;
-//     ofs << pipe.length << endl;
-//     ofs << pipe.diameter << endl;
-//     ofs << pipe.in_repair << endl;
-
-//     cout << "Труба была успешно сохранена" << endl;
-// }
-
-// void save_station(const Station& station, ofstream& ofs){
-//     ofs << "S\n";
-//     ofs << station.name << endl;
-//     ofs << station.workshops << endl;
-//     ofs << station.workshops_in_operation << endl;
-//     ofs << station.station_class << endl;
-
-//     cout << "Станция была успешно сохранена" << endl;
-// }
-
-void save_to_file(const Pipe& pipe, const Station& station, const string& filename){
+void save_to_file(const unordered_map<int, Pipe>& pipes, const unordered_map<int, Station>& stations, const string& filename){
     ofstream ofs(filename);
-    if (pipe.getDiameter() || station.getWorkshops()){
-        if (pipe.getDiameter())
-            pipe.SavePipe(ofs);
-        if (station.getWorkshops())
-            station.SaveStation(ofs);
+    if (!(pipes.empty() && stations.empty())){
+        if (!pipes.empty())
+            for (const auto& pipe : pipes)
+                pipe.second.SavePipe(ofs);
+        if (!stations.empty())
+            for (const auto& station : stations)
+                station.second.SaveStation(ofs);
     } else
         cout << "Нет объектов для сохранения в файл" << endl;
 }
 
-// void load_pipe(Pipe& pipe, ifstream& ifs){
-//     getline(ifs >> ws, pipe.getName());
-//     ifs >> pipe.length >> pipe.diameter >> pipe.in_repair;
-//     cout << "Труба загружена успешно" << endl;
-// }
 
-// void load_station(Station& station, ifstream& ifs){
-//     getline(ifs >> ws, station.getName());
-//     ifs >> station.workshops >> station.workshops_in_operation >> station.station_class;
-//     cout << "КС загружена успешно" << endl;
-// }
-
-void load_file(Pipe& pipe, Station& station, const string& filename){
+void load_file(unordered_map<int, Pipe>& pipes, unordered_map<int, Station>& stations, const string& filename){
     ifstream ifs(filename);
-    if (!(ifs)){
-        cout << "Не удалось открыть файл на чтение" << endl;
+    if (!ifs){
+        cout << "Такого файла не существует" << endl;
         return;
     }
+    Pipe pipe;
+    Station station;
     string line;
-    pipe={};
-    station={};
+    pipes.clear();
+    stations.clear();
     while (ifs >> line){
-        if (line == "Pipe"){
+        if (line == "P"){
             pipe.LoadPipe(ifs);
+            pipes[pipe.getId()] = pipe;
         }
         if (line == "S"){
             station.LoadStation(ifs);
+            stations[station.getId()] = station;
         }
     }
 }
+
 
 void print_menu(){
     cout << "Выберите действие:" << endl;
     cout << "1. Добавить трубу" << endl;
     cout << "2. Добавить КС" << endl;
     cout << "3. Просмотр всех объектов" << endl;
-    cout << "4. Редактировать трубу" << endl;
-    cout << "5. Редактировать КС" << endl;
-    cout << "6. Сохранить" << endl;
-    cout << "7. Загрузить" << endl;
+    cout << "4. Просмотр труб по фильтру" << endl;
+    cout << "5. Просмотр КС по фильтру" << endl;
+    cout << "6. Редактировать трубу" << endl;
+    cout << "7. Редактировать КС" << endl;
+    cout << "8. Сохранить" << endl;
+    cout << "9. Загрузить" << endl;
     cout << "0. Выход" << endl;
 }
 
@@ -94,63 +70,108 @@ int main(){
 	ofstream logfile("log_"+ time + ".log");
 	if (logfile)
 		cerr_log.redirect(logfile);
-    Pipe pipe;
-    Station station;
+    unordered_map<int, Pipe> pipes;
+    unordered_map<int, Station> stations;
     while (1){
         print_menu();
-        switch (safe_input(0, 7)){
+        switch (safe_input(0, 9)){
             case 1: {
-                cout << "1) Добавление новой трубы:" << endl; cin >> pipe;
+                Pipe pipe;
+                cout << "1) Добавление новой трубы:" << endl;
+                cin >> pipe;
+                pipes[pipe.getId()] = pipe;
                 break;
             }
             case 2: {
-                cout << "2) Добавление новой КС:" << endl; cin >> station;
+                Station station;
+                cout << "2) Добавление новой КС:" << endl;
+                cin >> station;
+                stations[station.getId()] = station;
                 break;
             }
             case 3: {
-                if (pipe.getDiameter() || station.getWorkshops()){
+                if (!(pipes.empty() && stations.empty())){
                     cout << "3) ";
-                    if (pipe.getDiameter())
-                        cout << "Параметры трубы:" << endl << pipe;
-                    if (station.getWorkshops() != 0)
-                        cout  << "Параметры станции:" << endl << station;
+                    if (!pipes.empty()){
+                        for (const auto& pipe : pipes)
+                            cout << "Параметры трубы с id " << pipe.first << ":"  << endl << pipe.second;
+                    }
+                    if (!stations.empty()){
+                        for (const auto& station : stations)
+                            cout  << "Параметры станции с id " << station.first << endl << station.second;
+                    }
                 } else
                     cout << "Ни одного объекта еще не было добавлено" << endl;
                 break;
             }
             case 4: {
-                cout << "4) Редактирование трубы:" << endl;
-                if (pipe.getDiameter()){
-                    cout << "Труба все еще в ремонте? (0 - нет, 1 - да) - ";
-                    pipe.setInRepair(safe_input(0, 1, "0 (нет) или 1 (да): "));
-                } else
-                    cout << "Добавьте трубу перед тем, как ее редактировать" << endl;
+                cout << "Фильтр (по названию - 0, по признаку 'в ремонте' - 1): ";
+                if (safe_input(0, 1) == 0){
+                    cout << "Название: ";
+                    string name;
+                    INPUT_LINE(cin, name);
+                    find_by_filter(pipes, Pipe::check_pipe_by_name, name);
+                } else {
+                    std::cout << "В ремонте (0 - нет, 1 - да) - ";
+	                find_by_filter(pipes, Pipe::check_pipe_by_in_repair, (bool)safe_input(0, 1, "0 (нет) или 1 (да)"));
+                }
                 break;
             }
             case 5: {
-                cout << "5) Редактирование КС:" << endl;
-                if (station.getWorkshops()){
-                    cout << "Количество цехов в работе на данный момент - ";
-                    station.setStationClass(safe_input(0, station.getWorkshops()));
-                } else
-                    cout << "Добавтье КС перед так, как ее редактирвоать" << endl;
+                cout << "Фильтр (по названию - 0, по проценту незадействованных цехов - 1): ";
+                if (safe_input(0, 1) == 0){
+                    cout << "Название: ";
+                    string name;
+                    INPUT_LINE(cin, name);
+                    find_by_filter(stations, Station::check_station_by_name, name);
+                } else {
+                    std::cout << "Минимальный процент незадействованных цехов (от 0 до 100) - ";
+                    find_by_filter(stations, Station::check_station_by_workshop_percentage, safe_input(0., 100.) / 100.);
+                }
                 break;
-            }
+            }    
+            // case 4: {
+            //     cout << "4) Редактирование трубы:" << endl;
+            //     if (!pipes.empty()){
+            //         cout << "Укажите номер трубы, котору"
+            //         cout << "Труба все еще в ремонте? (0 - нет, 1 - да) - ";
+            //         pipe.setInRepair(safe_input(0, 1, "0 (нет) или 1 (да): "));
+            //     } else
+            //         cout << "Добавьте трубу перед тем, как ее редактировать" << endl;
+            //     break;
+            // }
+            // case 5: {
+            //     cout << "5) Редактирование КС:" << endl;
+            //     if (!stations.empty()){
+            //         cout << "Количество цехов в работе на данный момент - ";
+            //         station.setStationClass(safe_input(0, station.getWorkshops()));
+            //     } else
+            //         cout << "Добавтье КС перед так, как ее редактирвоать" << endl;
+            //     break;
+            // }
             case 6: {
                 cout << "6) ";
-                save_to_file(pipe, station, "output.dat");
+                cout << "Укажите файл для сохранения (по умолчанию output.dat): ";
+                string filename;
+                INPUT_LINE(cin, filename);
+                if (filename.empty())
+                    filename = "output.dat";
+                save_to_file(pipes, stations, filename);
                 break;
             }
             case 7:{
                 cout << "7) ";
-                load_file(pipe, station, "output.dat");
+                cout << "Укажите файл для загрузки (по умолчанию output.dat): ";
+
+                string filename;
+                INPUT_LINE(cin, filename);
+                if (filename.empty())
+                    filename = "output.dat";
+                load_file(pipes, stations, filename);
                 break;
             }
             case 0: {
                 return 0;
-            }
-            default: {
-                cout << "Введенная команда не существует, попробуйте еще раз" << endl;
             }
         }
     }
